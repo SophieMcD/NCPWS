@@ -1,0 +1,11 @@
+{
+	
+	"PlantID":"Plant_4b",
+	"dataPin":29,
+	"LEDPin":37,
+	"TopicSub": "plant4a",
+	"TopicPub": "plant4b",
+	"pumpPin": 12,
+	"PORT": 5858,
+	
+}
