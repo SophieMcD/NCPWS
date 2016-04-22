@@ -58,8 +58,8 @@ dataPin = 37
 clkPin = 7
 
 redLed = 36
-GPIO.setup (31,GPIO.OUT)
-GPIO.output (31,False)
+GPIO.setup (redLed,GPIO.OUT)
+GPIO.output (redLed,False)
 
 def read_sensor():
     # Read all the ADC channel values in a list.
@@ -169,7 +169,7 @@ while True:
            # if sensor_1 > 100:
                 pump_ON()
                 #pump_OFF()
-                GPIO.output (31,False)
+                GPIO.output (redLed,False)
                 print ("paired plant has been watered, this pump has been actived.")
 
     sys.stdout.flush()
