@@ -57,7 +57,7 @@ s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 dataPin = 37
 clkPin = 7
 
-redLed = 31
+redLed = 36
 GPIO.setup (31,GPIO.OUT)
 GPIO.output (31,False)
 
