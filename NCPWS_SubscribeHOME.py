@@ -10,9 +10,11 @@ import paho.mqtt.client as mqtt
 # HOST & PORT are for sending the incoming data to the
 # publishing and sensor data prog for analysis
 HOST = "localhost"
-PORT = 5455
+PORT = 5459
 data = "incoming"
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+clientID = 3328
 
 #subscribing to opensensors.io
 def on_publish(client, userdata, mid):
@@ -20,7 +22,7 @@ def on_publish(client, userdata, mid):
        
 def on_connect(client, userdata, flags, rc):
        print(str(datetime.datetime.now())+ " On connect")
-       mqttc.subscribe("/users/woolfie/plant3a")
+       mqttc.subscribe("/users/woolfie/plant1b")
 
 def on_message(client, userdata, msg):
     print(msg.topic+ " incoming data " + msg.payload)
@@ -31,7 +33,7 @@ def on_message(client, userdata, msg):
     sys.stdout.flush()
     
 
-mqttc = mqtt.Client("Plant2aHomeSUB")
+mqttc = mqtt.Client("clientID")
 
 mqttc.username_pw_set("woolfie", "rainbow1!")
 print('on subscibe')
