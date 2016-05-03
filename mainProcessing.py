@@ -1,68 +1,85 @@
 import time, threading, datetime
 import RPi.GPIO as GPIO
-# Import the ADS1x15 module.
-import Adafruit_ADS1x15
 import socket
 import sys
 import os
 import paho.mqtt.client as mqtt
 from sht1x.Sht1x import Sht1x as SHT1x
+import select
+import json
 
-#incoming data via udp port / socket
-HOST = "localhost"
+
+#  set the pins numbering mode 
+GPIO.setmode(GPIO.BOARD)
+
+with open("/home/pi/NCPWSstartup/jason_config_files/configFile_1b.json") as f:
+    config = json.load(f)
+
+#jason vars
+plantID = config["plantIDj"]
+dataPin = config["dataPinj"]
+redLed = config["redLEDj"]
+PORTsub = config["PORTsubj"]
+PORTpub = config["PORTpubj"]
+topic_Sub = config["topic_Subj"]
+topic_Pub = config["topic_Pubj"]
+pumpPin = config["pumpPinj"]
+clientSub = config["clientSubj"]
+pwSub = config["pwSubj"]
+clientPub = config["clientPubj"]
+pwPub = config["pwPubj"]
+
+#sensor pins
+clkPin = 7
+GPIO.setup (redLed,GPIO.OUT)
+GPIO.output (redLed,False)
+
 #SUB incoming data
 HOST = "localhost"
-PORTsub = 5459
-# SUBdata = "SUBincoming"
 sIncomingSUB = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 sIncomingSUB.bind((HOST,PORTsub))
-
-
+#sIncomingSUB.setblocking(0)
+ready = select.select([sIncomingSUB],[],[],2)
+sIncomingSUB.settimeout(10)
 #send data to PUB
-PORTpub = 5455
-# PUBdata = "sendPUBdata"
 socketPUB = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-
-# remote energenie: set the pins numbering mode - from ENER200
-GPIO.setmode(GPIO.BOARD)
 
 # remote energenie: Select the GPIO pins used for the encoder K0-K3 data inputs
 GPIO.setup(11, GPIO.OUT)
 GPIO.setup(15, GPIO.OUT)
 GPIO.setup(16, GPIO.OUT)
 GPIO.setup(13, GPIO.OUT)
-
 # remote energenie: Select the signal to select ASK/FSK
 GPIO.setup(18, GPIO.OUT)
-
 # remote energenie: Select the signal used to enable/disable the modulator
 GPIO.setup(22, GPIO.OUT)
-
 #remote energenie: Disable the modulator by setting CE pin lo
 GPIO.output (22, False)
-
 # remote energenie: Set the modulator to ASK for On Off Keying 
 # by setting MODSEL pin lo
 GPIO.output (18, False)
-
 # remote energenie: Initialise K0-K3 inputs of the encoder to 0000
 GPIO.output (11, False)
 GPIO.output (15, False)
 GPIO.output (16, False)
 GPIO.output (13, False)
 
+def on_publish(client, userdata, mid):
+       print(str(datetime.datetime.now())+ " On publish: "+str(mid))
+       
+def on_connect(client, userdata, rc):
+       print(str(datetime.datetime.now())+ " On connect")      
 
-#print('Reading ADS1x15 values, press Ctrl-C to quit...')
-s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
-#sensor pins
-dataPin = 37
-clkPin = 7
-PORTsub
-redLed = 36
-GPIO.setup (redLed,GPIO.OUT)
-GPIO.output (redLed,False)
+def send_data_to_broker (data):
+    sensor_data = str(data)
+    mqttc = mqtt.Client(clientPub)
+    mqttc.username_pw_set("woolfie", pwPub)
+    mqttc.connect("mqtt.opensensors.io", 1883,60)
+    mqttc.publish("/users/woolfie/plant1a", sensor_data, qos=1)
+    print("published")
+    time.sleep(1)
+    
 
 def read_sensor():
     sht1x = SHT1x(dataPin, clkPin)
@@ -90,7 +107,7 @@ def pump_ON():
     # Disable the modulator
     GPIO.output (22, False)
     pump_OFF()
-    time.sleep(3)
+    time.sleep(0.25)
    
 
 def pump_OFF():
@@ -110,7 +127,9 @@ def pump_OFF():
 
 thisSensor_last_5_num =[]
 thisSensor_mean = 0
-maxMoist = 9.99
+maxMoist = 99.99
+max_sensor_difference = 8
+
 
 # Main loop.
 while True:
@@ -130,15 +149,20 @@ while True:
         thisSensor_mean = sum(thisSensor_last_5_num)/len(thisSensor_last_5_num)
         print ("this Sensors mean is: " + str(thisSensor_mean))
         #send_data_to_broker(thisSensor_mean)
-        bytesSent = socketPUB.sendto(str(thisSensor_mean),(HOST,PORTpub))
-            
+        #bytesSent = socketPUB.sendto(str(thisSensor_mean),(HOST,PORTpub))
+        send_data_to_broker(str(thisSensor_mean))
 
-        if sIncomingSUB.recv:
+    #    if ready[0]:
+        try:
             incomingData= sIncomingSUB.recv(32)
             print ("incoming: " + incomingData) #already averaged on other end
+            time.sleep(5)
 
             if incomingData == str("pump on"):
                 print("paired plant's pump is on")
+
+            elif incomingData == str("no incoming data received"):
+                print("paired plant's lost connection")
                
             else:
                 difference_of_incoming__and_thisSensor = float(incomingData)- thisSensor_mean
@@ -150,21 +174,28 @@ while True:
                     pump_OFF()
                     print ("soil saturated, pump disabled. Red light indicates not to water")
                 
-                elif sensor_1 < maxMoist and difference_of_incoming__and_thisSensor > 5:
+                elif sensor_1 < maxMoist and difference_of_incoming__and_thisSensor > max_sensor_difference:
                # if sensor_1 > 100:
                     pump_ON()
-                    bytesSent = socketPUB.sendto("pump on",(HOST,PORTpub))
+                    #bytesSent = socketPUB.sendto("pump on",(HOST,PORTpub))
+                    send_data_to_broker ("pump on")
                     pump_OFF() #keep this in just for back up
                     GPIO.output (redLed,False)
                     print ("paired plant has been watered, this pump has been actived.")
 
                 else:
                     GPIO.output (redLed,False)
+        except:
 
-        else:
+    #    else:
             print("no incoming data")
             #bytesSent = socketPUB.sendto(str(sensor_1),(HOST,PORTpub))
-            bytesSent = socketPUB.sendto(str(thisSensor_mean),(HOST,PORTpub))
+            #bytesSent = socketPUB.sendto("no incoming data received",(HOST,PORTpub))
+            #bytesSent = socketPUB.sendto(str(thisSensor_mean),(HOST,PORTpub))
+            send_data_to_broker("no incoming data received")
+            send_data_to_broker(str(thisSensor_mean))
+
+            time.sleep(10)
             
 
 sys.stdout.flush()
@@ -172,5 +203,4 @@ sys.stdout.flush()
 GPIO.cleanup()
         
     
-
 

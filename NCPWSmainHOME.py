@@ -1,96 +1,94 @@
 import time, threading, datetime
 import RPi.GPIO as GPIO
-# Import the ADS1x15 module.
-import Adafruit_ADS1x15
 import socket
 import sys
 import os
 import paho.mqtt.client as mqtt
 from sht1x.Sht1x import Sht1x as SHT1x
-
-#incoming data via udp port / socket
-HOST = "localhost"
-PORT = 5455
-sIncoming = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-sIncoming.bind((HOST,PORT))
-
-#Client(client_id="2787"   
-
-# Or create an ADS1015 ADC (12-bit) instance.
-#adc = Adafruit_ADS1x15.ADS1015()
+import select
+import json
 
 
-
-# remote energenie: set the pins numbering mode - from ENER200
+#  set the pins numbering mode 
 GPIO.setmode(GPIO.BOARD)
+
+with open("/home/pi/NCPWSstartup/jason_config_files/configFile_1b.json") as f:
+    config = json.load(f)
+
+#jason vars
+plantID = config["plantIDj"]
+dataPin = config["dataPinj"]
+redLed = config["redLEDj"]
+PORTsub = config["PORTsubj"]
+PORTpub = config["PORTpubj"]
+topic_Sub = config["topic_Subj"]
+topic_Pub = config["topic_Pubj"]
+pumpPin = config["pumpPinj"]
+clientSub = config["clientSubj"]
+pwSub = config["pwSubj"]
+clientPub = config["clientPubj"]
+pwPub = config["pwPubj"]
+
+#sensor pins
+clkPin = 7
+GPIO.setup (redLed,GPIO.OUT)
+GPIO.output (redLed,False)
+
+#SUB incoming data
+HOST = "localhost"
+sIncomingSUB = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+sIncomingSUB.bind((HOST,PORTsub))
+#sIncomingSUB.setblocking(0)
+ready = select.select([sIncomingSUB],[],[],2)
+sIncomingSUB.settimeout(10)
+#send data to PUB
+socketPUB = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
 
 # remote energenie: Select the GPIO pins used for the encoder K0-K3 data inputs
 GPIO.setup(11, GPIO.OUT)
 GPIO.setup(15, GPIO.OUT)
 GPIO.setup(16, GPIO.OUT)
 GPIO.setup(13, GPIO.OUT)
-
 # remote energenie: Select the signal to select ASK/FSK
 GPIO.setup(18, GPIO.OUT)
-
 # remote energenie: Select the signal used to enable/disable the modulator
 GPIO.setup(22, GPIO.OUT)
-
 #remote energenie: Disable the modulator by setting CE pin lo
 GPIO.output (22, False)
-
 # remote energenie: Set the modulator to ASK for On Off Keying 
 # by setting MODSEL pin lo
 GPIO.output (18, False)
-
 # remote energenie: Initialise K0-K3 inputs of the encoder to 0000
 GPIO.output (11, False)
 GPIO.output (15, False)
 GPIO.output (16, False)
 GPIO.output (13, False)
 
+def on_publish(client, userdata, mid):
+       print(str(datetime.datetime.now())+ " On publish: "+str(mid))
+       
+def on_connect(client, userdata, rc):
+       print(str(datetime.datetime.now())+ " On connect")      
 
-#print('Reading ADS1x15 values, press Ctrl-C to quit...')
-s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
-#sensor pins
-dataPin = 37
-clkPin = 7
-
-redLed = 36
-GPIO.setup (redLed,GPIO.OUT)
-GPIO.output (redLed,False)
+def send_data_to_broker (data):
+    sensor_data = str(data)
+    mqttc = mqtt.Client(clientPub)
+    mqttc.username_pw_set("woolfie", pwPub)
+    mqttc.connect("mqtt.opensensors.io", 1883,60)
+    mqttc.publish("/users/woolfie/plant1a", sensor_data, qos=1)
+    print("published")
+    time.sleep(1)
+    
 
 def read_sensor():
-    # Read all the ADC channel values in a list.
-    # GAIN = 1
-    #sensor_moist_val = adc.read_adc(sensor_id,gain = GAIN)
     sht1x = SHT1x(dataPin, clkPin)
     temperature = sht1x.read_temperature_C()
     humidity = sht1x.read_humidity()
     dewPoint = sht1x.calculate_dew_point(temperature, humidity)
     print("Temperature: {} Humidity: {} Dew Point: {}".format(temperature, humidity, dewPoint))  
-   # print('moisture level of sensor: ',sensor_id, " is: ", sensor_moist_val)
     time.sleep(0.5)
     return humidity
-
-def on_publish(client, userdata, mid):
-       print(str(datetime.datetime.now())+ " On publish: "+str(mid))
-       
-def on_connect(client, userdata, rc):
-       print(str(datetime.datetime.now())+ " On connect")
-       
-
-def send_data_to_broker (data):
-    sensor_data = str(data)
-    mqttc = mqtt.Client("Plant2aHomePUB")
-    mqttc.username_pw_set("woolfie", "rainbow1!")
-    mqttc.connect("mqtt.opensensors.io", 1883,60)
-    mqttc.publish("/users/woolfie/plant2a", sensor_data, qos=1)
-    print("published")
-    time.sleep(5)
-  #  print(sensor_data)
-  
 
     
 def pump_ON():
@@ -108,9 +106,8 @@ def pump_ON():
     time.sleep(pump_on_time)
     # Disable the modulator
     GPIO.output (22, False)
-    send_data_to_broker ("pump on")
     pump_OFF()
-    time.sleep(3)
+    time.sleep(0.25)
    
 
 def pump_OFF():
@@ -129,8 +126,9 @@ def pump_OFF():
     GPIO.output (22, False)    
 
 thisSensor_last_5_num =[]
-
-
+thisSensor_mean = 0
+maxMoist = 99.99
+max_sensor_difference = 8
 
 
 # Main loop.
@@ -140,6 +138,8 @@ while True:
     if len(thisSensor_last_5_num)<5:
         thisSensor_last_5_num.append(sensor_1)
         print (thisSensor_last_5_num)
+        thisSensor_mean = sensor_1
+       # bytesSent = socketPUB.sendto(str(thisSensor_mean),(HOST,PORTpub))
 
     else: 
         # latest 5 readings from this sensor
@@ -148,31 +148,56 @@ while True:
         #average reading from the last 5 numbers
         thisSensor_mean = sum(thisSensor_last_5_num)/len(thisSensor_last_5_num)
         print ("this Sensors mean is: " + str(thisSensor_mean))
-        send_data_to_broker(thisSensor_mean)
-        incomingData= sIncoming.recv(32)
-        print ("incoming: " + incomingData) #already averaged on other end
+        #send_data_to_broker(thisSensor_mean)
+        #bytesSent = socketPUB.sendto(str(thisSensor_mean),(HOST,PORTpub))
+        send_data_to_broker(str(thisSensor_mean))
 
-        if incomingData == str("pump on"):
-            print("paired plant's pump is on")
-       
-        else:
-            difference_of_incoming__and_thisSensor = float(incomingData)- thisSensor_mean
-            print ("differenc: " +str(difference_of_incoming__and_thisSensor))
-        
-            if thisSensor_mean >99.9:
-                #turn LED on
-                GPIO.output (redLed,True)
-                pump_OFF()
-                print ("soil saturated, pump disabled. Red light indicates not to water")
+    #    if ready[0]:
+        try:
+            incomingData= sIncomingSUB.recv(32)
+            print ("incoming: " + incomingData) #already averaged on other end
+            time.sleep(5)
+
+            if incomingData == str("pump on"):
+                print("paired plant's pump is on")
+
+            elif incomingData == str("no incoming data received"):
+                print("paired plant's lost connection")
+               
+            else:
+                difference_of_incoming__and_thisSensor = float(incomingData)- thisSensor_mean
+                print ("differenc: " +str(difference_of_incoming__and_thisSensor))
+
+                if sensor_1 > maxMoist:
+                    #turn LED on
+                    GPIO.output (redLed,True)
+                    pump_OFF()
+                    print ("soil saturated, pump disabled. Red light indicates not to water")
+                
+                elif sensor_1 < maxMoist and difference_of_incoming__and_thisSensor > max_sensor_difference:
+               # if sensor_1 > 100:
+                    pump_ON()
+                    #bytesSent = socketPUB.sendto("pump on",(HOST,PORTpub))
+                    send_data_to_broker ("pump on")
+                    pump_OFF() #keep this in just for back up
+                    GPIO.output (redLed,False)
+                    print ("paired plant has been watered, this pump has been actived.")
+
+                else:
+                    GPIO.output (redLed,False)
+        except:
+    #    else:
+            print("no incoming data")
+            #bytesSent = socketPUB.sendto(str(sensor_1),(HOST,PORTpub))
+            #bytesSent = socketPUB.sendto("no incoming data received",(HOST,PORTpub))
+            #bytesSent = socketPUB.sendto(str(thisSensor_mean),(HOST,PORTpub))
+            send_data_to_broker("no incoming data received")
+            send_data_to_broker(str(thisSensor_mean))
+
+            time.sleep(10)
             
-            elif difference_of_incoming__and_thisSensor > 5:
-           # if sensor_1 > 100:
-                pump_ON()
-                #pump_OFF()
-                GPIO.output (redLed,False)
-                print ("paired plant has been watered, this pump has been actived.")
 
-    sys.stdout.flush()
+sys.stdout.flush()
 
 GPIO.cleanup()
         

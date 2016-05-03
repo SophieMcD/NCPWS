@@ -1,20 +1,37 @@
 import time, threading, datetime
 import RPi.GPIO as GPIO
-# Import the ADS1x15 module.
-import Adafruit_ADS1x15
 import socket
 import sys
 import os
 import paho.mqtt.client as mqtt
+import json
+
+
+
+with open("/home/pi/NCPWSstartup/jason_config_files/configFile_1b.json") as f:
+    config = json.load(f)
+
+
+#jason vars
+plantID = config["plantIDj"]
+dataPin = config["dataPinj"]
+redLed = config["redLEDj"]
+PORTsub = config["PORTsubj"]
+PORTpub = config["PORTpubj"]
+topic_Sub = config["topic_Subj"]
+topic_Pub = config["topic_Pubj"]
+pumpPin = config["pumpPinj"]
+clientSub = config["clientSubj"]
+pwSub = config["pwSubj"]
+clientPub = config["clientPubj"]
+pwPub = config["pwPubj"]
+
 
 # HOST & PORT are for sending the incoming data to the
 # publishing and sensor data prog for analysis
 HOST = "localhost"
-PORT = 5459
 data = "incoming"
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
-clientID = 3328
 
 #subscribing to opensensors.io
 def on_publish(client, userdata, mid):
@@ -27,15 +44,14 @@ def on_connect(client, userdata, flags, rc):
 def on_message(client, userdata, msg):
     print(msg.topic+ " incoming data " + msg.payload)
     data = msg.payload
-    print ("data data "+ data)
-    bytesSent = s.sendto(data,(HOST,PORT))
+    bytesSent = s.sendto(data,(HOST,PORTsub))
     #print(bytesSent)
     sys.stdout.flush()
     
 
-mqttc = mqtt.Client("clientID")
+mqttc = mqtt.Client("3328")
 
-mqttc.username_pw_set("woolfie", "rainbow1!")
+mqttc.username_pw_set("woolfie", "QXBV7yK3")
 print('on subscibe')
 mqttc.on_connect = on_connect
 print('on connect')
@@ -48,4 +64,3 @@ mqttc.loop_forever()
 
 
     
-
