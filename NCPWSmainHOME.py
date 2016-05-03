@@ -76,7 +76,7 @@ def send_data_to_broker (data):
     mqttc = mqtt.Client(clientPub)
     mqttc.username_pw_set("woolfie", pwPub)
     mqttc.connect("mqtt.opensensors.io", 1883,60)
-    mqttc.publish("/users/woolfie/plant1a", sensor_data, qos=1)
+    mqttc.publish("/users/woolfie/" + topic_Pub, sensor_data, qos=1)
     print("published")
     time.sleep(1)
     

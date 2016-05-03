@@ -39,7 +39,7 @@ def on_publish(client, userdata, mid):
        
 def on_connect(client, userdata, flags, rc):
        print(str(datetime.datetime.now())+ " On connect")
-       mqttc.subscribe("/users/woolfie/plant1b")
+       mqttc.subscribe("/users/woolfie/" + str(topic_Sub))
 
 def on_message(client, userdata, msg):
     print(msg.topic+ " incoming data " + msg.payload)
@@ -49,9 +49,9 @@ def on_message(client, userdata, msg):
     sys.stdout.flush()
     
 
-mqttc = mqtt.Client("3328")
+mqttc = mqtt.Client(clientSub)
 
-mqttc.username_pw_set("woolfie", "QXBV7yK3")
+mqttc.username_pw_set("woolfie", pwSub)
 print('on subscibe')
 mqttc.on_connect = on_connect
 print('on connect')
