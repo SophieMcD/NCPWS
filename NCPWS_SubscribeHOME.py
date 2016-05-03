@@ -8,7 +8,7 @@ import json
 
 
 
-with open("/home/pi/NCPWSstartup/jason_config_files/configFile_1b.json") as f:
+with open("/home/pi/NCPWSstartup/jason_config_files/thisPlantID.json") as f:
     config = json.load(f)
 
 

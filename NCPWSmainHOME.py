@@ -12,7 +12,7 @@ import json
 #  set the pins numbering mode 
 GPIO.setmode(GPIO.BOARD)
 
-with open("/home/pi/NCPWSstartup/jason_config_files/configFile_1b.json") as f:
+with open("/home/pi/NCPWSstartup/jason_config_files/thisPlantID.json") as f:
     config = json.load(f)
 
 #jason vars
