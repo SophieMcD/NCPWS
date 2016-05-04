@@ -106,8 +106,8 @@ def pump_ON():
     time.sleep(pump_on_time)
     # Disable the modulator
     GPIO.output (22, False)
-    pump_OFF()
     time.sleep(0.25)
+    pump_OFF()
    
 
 def pump_OFF():
