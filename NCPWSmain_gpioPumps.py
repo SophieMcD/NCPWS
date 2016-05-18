@@ -152,6 +152,7 @@ while True:
                     pump_OFF() #keep this in just for back up
                     GPIO.output (redLed,False)
                     print ("paired plant has been watered, this pump has been actived.")
+                    
 
                 else:
                     GPIO.output (redLed,False)
@@ -164,7 +165,7 @@ while True:
             send_data_to_broker("no incoming data received")
             send_data_to_broker(str(thisSensor_mean))
 
-            time.sleep(10)
+       time.sleep(10)
             
 
 sys.stdout.flush()
