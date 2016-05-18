@@ -97,7 +97,7 @@ def pump_OFF():
 
 thisSensor_last_5_num =[]
 thisSensor_mean = 0
-maxMoist = 99.99
+maxMoist = 101.5
 max_sensor_difference = 8
 
 
