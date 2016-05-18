@@ -164,8 +164,9 @@ while True:
             #bytesSent = socketPUB.sendto(str(thisSensor_mean),(HOST,PORTpub))
             send_data_to_broker("no incoming data received")
             send_data_to_broker(str(thisSensor_mean))
+            time.sleep(10)
 
-       time.sleep(10)
+       
             
 
 sys.stdout.flush()
