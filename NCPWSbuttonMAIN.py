@@ -22,17 +22,23 @@ with open(filePath) as f:
 #jason vars
 plantID = config["plantIDj"]
 dataPin = config["dataPinj"]
-redLed = config["redLEDj"]
+#redLed = config["redLEDj"]
 PORTsub = config["PORTsubj"]
 PORTpub = config["PORTpubj"]
 topic_Sub = config["topic_Subj"]
 topic_Pub = config["topic_Pubj"]
-pumpPin = config["pumpPinj"]
+#pumpPin = config["pumpPinj"]
 clientSub = config["clientSubj"]
 pwSub = config["pwSubj"]
 clientPub = config["clientPubj"]
 pwPub = config["pwPubj"]
-#make new jason var = useDeactButton
+
+#make new hardware pin vars =
+wlButtonPin = 18
+pumpButton = 16
+pumpPin = 22
+ledPump = 32
+ledWL = 36
 
 #sensor pins
 #pin 22 = button, with software pull down resistor enabled
@@ -72,7 +78,7 @@ class WateringLock(object):
 
     def turn_watering_lock_off(self):
         print("Turning watering lock off")
-        GPIO.output(redLed,0)
+        GPIO.output(ledWL,0)
         if self.timer is not None:
             self.timer.cancel()
         self.timer = None
@@ -80,7 +86,7 @@ class WateringLock(object):
 
     def turn_watering_lock_on(self):
         print("Turning watering lock on, turning off in 10 seconds")
-        GPIO.output(redLed,1)
+        GPIO.output(ledWL,1)
         if self.timer is not None:
             self.timer.cancel()
         self.locked = True
@@ -120,7 +126,7 @@ def pump_OFF():
 localWButtonStatus = False
 GPIO.output(redLed,0)
 wl = WateringLock()
-wlButtonPin = 24
+
 
 # send_data_to_broker("reactivated system")
 
@@ -133,14 +139,14 @@ while True:
         wl.press_button() #this has the flag and will turn on/off as apropriate
     
 
-    if GPIO.input(pumpPin) : #  (local Watering Button)== 1
+    if GPIO.input(pumpButton) : #  (local Watering Button)== 1
         print "Local BUTTON PRESSED"
         pump_ON()
-        GPIO.output(redLed,1)
+        GPIO.output(ledPump,1)
         print("local pump ON, activated by local user")
         if wl.locked():
             print ("watering lock on, do not activate this pump")
-            send_data_to_broker("local pump deactivated by user. Time remaining: " wl.timer)
+            send_data_to_broker("local pump deactivated by user. Wait 4 hours from lock time stamp")
         else:
         #send buttonStatus to broker
             send_data_to_broker("pump on")
@@ -150,7 +156,7 @@ while True:
         # GPIO.output(24, 1)         # set port/pin value to 1/HIGH/True
     else:
         print "no pumps on"
-        GPIO.output(redLed,0)
+        GPIO.output(ledPump,0)
         pump_OFF()
         send_data_to_broker("pump off")
 
@@ -176,18 +182,16 @@ while True:
             print("paired plant's lost connection")
         
 
-            else:
-                GPIO.output (redLed,False)
-        except:
+        else:
+            GPIO.output (redLed,False)
+     except:
     #    else:
-            print("no incoming data")
+         print("no incoming data")
             #bytesSent = socketPUB.sendto(str(sensor_1),(HOST,PORTpub))
             #bytesSent = socketPUB.sendto("no incoming data received",(HOST,PORTpub))
             #bytesSent = socketPUB.sendto(str(thisSensor_mean),(HOST,PORTpub))
-            send_data_to_broker("no incoming data received")
-
-
-            time.sleep(10)
+         send_data_to_broker("no incoming data received")
+         time.sleep(10)
             
 
 sys.stdout.flush()
