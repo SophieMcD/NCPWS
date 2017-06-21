@@ -12,12 +12,12 @@ import json
 #  set the pins numbering mode 
 GPIO.setmode(GPIO.BOARD)
 
-#with open("/home/pi/NCPWSstartup/jason_config_files/thisPlantID.json") as f:
-#    config = json.load(f)
-
-filePath = sys.argv[1]
-with open(filePath) as f:
+with open("/home/pi/NCPWSstartup/json_config_files/configFile_1b.json") as f:
     config = json.load(f)
+
+#filePath = sys.argv[1]
+#with open(filePath) as f:
+#    config = json.load(f)
 
 #jason vars
 plantID = config["plantIDj"]
@@ -41,13 +41,18 @@ ledPump = 32
 ledWL = 36
 
 #sensor pins
-#pin 22 = button, with software pull down resistor enabled
-GPIO.setup(22, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+#wlButtonPin = button, with software pull down resistor enabled
+GPIO.setup(wlButtonPin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+GPIO.setup(pumpButton, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+
+GPIO.setup(pumpPin,GPIO.OUT)
+
 #red LED shows timed Dectivated system status
-GPIO.setup (redLed,GPIO.OUT)
-GPIO.output (redLed,False)
+GPIO.setup (ledPump,GPIO.OUT)
+GPIO.output (ledPump,True)
+GPIO.setup (ledWL,GPIO.OUT)
+GPIO.output (ledWL,False)
 #user temporary deactivation
-GPIO.setup(24, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
 #SUB incoming data
 HOST = "localhost"
@@ -117,14 +122,15 @@ def send_data_to_broker (data):
     
 def pump_ON():
     GPIO.output(pumpPin, 1)
+    GPIO.output(ledPump,1)
 
 
 def pump_OFF():
     GPIO.output(pumpPin, 0)
+    GPIO.output(ledPump,0)
 
 
 localWButtonStatus = False
-GPIO.output(redLed,0)
 wl = WateringLock()
 
 
@@ -137,26 +143,19 @@ while True:
 
     if GPIO.input(wlButtonPin): # if user override button pressed on/off
         wl.press_button() #this has the flag and will turn on/off as apropriate
-    
+        print ("wlButton Pressed, water lock timer started")
+        send_data_to_broker("this plants water lock on")
 
     if GPIO.input(pumpButton) : #  (local Watering Button)== 1
         print "Local BUTTON PRESSED"
         pump_ON()
-        GPIO.output(ledPump,1)
         print("local pump ON, activated by local user")
-        if wl.locked():
-            print ("watering lock on, do not activate this pump")
-            send_data_to_broker("local pump deactivated by user. Wait 4 hours from lock time stamp")
-        else:
-        #send buttonStatus to broker
-            send_data_to_broker("pump on")
-            send_data_to_broker("pump on, activated by local user")
+        send_data_to_broker("pump on, activated by local user")
 
 
         # GPIO.output(24, 1)         # set port/pin value to 1/HIGH/True
     else:
         print "no pumps on"
-        GPIO.output(ledPump,0)
         pump_OFF()
         send_data_to_broker("pump off")
 
@@ -171,8 +170,13 @@ while True:
         time.sleep(5)
 
         if incomingData == str("pump on"):
-            print("paired plant's pump is on, activating local pump")
-            pump_ON()
+            print("paired plant's pump is on")
+            if wl.locked():
+                print ("watering lock on, do not activate this pump")
+                send_data_to_broker("local pump deactivated by user. Wait 4 hours from lock time stamp")
+            else:
+                print("activating local pump")
+                pump_ON()
         
         elif incomingData == str("pump off"):
             print("paired plant pump off, turning local pump off")
@@ -183,8 +187,8 @@ while True:
         
 
         else:
-            GPIO.output (redLed,False)
-     except:
+            GPIO.output(ledPump,0)
+    except:
     #    else:
          print("no incoming data")
             #bytesSent = socketPUB.sendto(str(sensor_1),(HOST,PORTpub))

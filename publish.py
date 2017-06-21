@@ -9,7 +9,7 @@ from sht1x.Sht1x import Sht1x as SHT1x
 
 
 
-with open("/home/pi/NCPWSstartup/jason_config_files/configFile_1b.json") as f:
+with open("/home/pi/NCPWSstartup/json_config_files/configFile_1b.json") as f:
     config = json.load(f)
 
 
