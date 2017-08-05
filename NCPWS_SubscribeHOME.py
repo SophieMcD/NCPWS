@@ -6,14 +6,14 @@ import os
 import paho.mqtt.client as mqtt
 import json
 
+time.sleep(5)
 
-
-with open("/home/pi/NCPWSstartup/json_config_files/configFile_1b.json") as f:
-    config = json.load(f)
-
-#filePath = sys.argv[1]
-#with open(filePath) as f:
+#with open("/home/pi/NCPWSstartup/json_config_files/configFile_1b.json") as f:
 #    config = json.load(f)
+
+filePath = sys.argv[1]
+with open(filePath) as f:
+    config = json.load(f)
 
 
 #jason vars

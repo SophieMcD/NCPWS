@@ -8,6 +8,8 @@ from sht1x.Sht1x import Sht1x as SHT1x
 import select
 import json
 
+time.sleep(5)
+
 
 #  set the pins numbering mode 
 GPIO.setmode(GPIO.BOARD)
@@ -34,6 +36,7 @@ clientPub = config["clientPubj"]
 pwPub = config["pwPubj"]
 
 #make new hardware pin vars =
+shutdownButton = 37
 wlButtonPin = 18
 pumpButton = 16
 pumpPin = 22
@@ -42,10 +45,11 @@ ledWL = 36
 
 #sensor pins
 #wlButtonPin = button, with software pull down resistor enabled
+GPIO.setup(shutdownButton, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(wlButtonPin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 GPIO.setup(pumpButton, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
-GPIO.setup(pumpPin,GPIO.OUT)
+GPIO.setup(pumpPin, GPIO.OUT)
 
 #red LED shows timed Dectivated system status
 GPIO.setup (ledPump,GPIO.OUT)
@@ -141,6 +145,17 @@ wl = WateringLock()
 # Main loop.
 while True:
 
+    if not GPIO.input(shutdownButton):
+        print "shutting down"
+        os.system("sudo shutdown")
+        lightsOn = False
+        while True:
+            GPIO.output(ledPump, lightsOn)
+            GPIO.output(ledWL, not lightsOn)
+            lightsOn = not lightsOn
+            time.sleep(0.5)
+        
+
     if GPIO.input(wlButtonPin): # if user override button pressed on/off
         wl.press_button() #this has the flag and will turn on/off as apropriate
         print ("wlButton Pressed, water lock timer started")
@@ -195,12 +210,9 @@ while True:
             #bytesSent = socketPUB.sendto("no incoming data received",(HOST,PORTpub))
             #bytesSent = socketPUB.sendto(str(thisSensor_mean),(HOST,PORTpub))
          send_data_to_broker("no incoming data received")
-         time.sleep(10)
+         time.sleep(5)
             
 
 sys.stdout.flush()
 
 GPIO.cleanup()
-        
-    
-
