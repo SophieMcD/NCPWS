@@ -1,0 +1,24 @@
+---
+- hosts: all
+  vars:
+    mqtt_port: 1883
+  remote_user: ec2-user
+  become: true
+  tasks:
+    - copy: src=epel.repo dest=/etc/yum.repos.d/epel.repo owner=root group=root mode=0644
+    - yum: name='*' state=latest exclude='kernel*'
+    - get_url: 
+        url: 'http://download.opensuse.org/repositories/home:/oojah:/mqtt/CentOS_CentOS-7/home:oojah:mqtt.repo'
+        dest: /etc/yum.repos.d/mqtt.repo
+    - yum: state=present name={{ item }}
+      with_items:
+        - mosquitto
+        - mosquitto-clients
+    - service: name=mosquitto enabled=no state=stopped
+    - pip: name=supervisor
+    - copy: src=supervisor-init dest=/etc/init.d/supervisor mode=0755
+    - copy: src=supervisor-sysconfig dest=/etc/sysconfig/supervisor mode=0644
+    - copy: src=supervisord.conf dest=/etc/supervisord.conf mode=0644
+    - file: path=/etc/supervisor.d/ state=directory mode=0755
+    - command: chkconfig --add supervisor
+    - service: name=supervisor enabled=yes state=started
