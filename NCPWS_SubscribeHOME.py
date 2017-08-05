@@ -50,7 +50,6 @@ def on_message(client, userdata, msg):
     data = msg.payload
     bytesSent = s.sendto(data,(HOST,PORTsub))
     #print(bytesSent)
-    time.sleep(5)
     sys.stdout.flush()
     
 
