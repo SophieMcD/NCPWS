@@ -1,0 +1,3 @@
+{
+  "password": "Copy this file to config.json, set the right password here, and then run the ansible deploy script"
+}
