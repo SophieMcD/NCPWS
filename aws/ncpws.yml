@@ -4,6 +4,8 @@
     mqtt_port: 1883
   remote_user: ec2-user
   become: true
+  environment:
+    PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
   tasks:
     - copy: src=epel.repo dest=/etc/yum.repos.d/epel.repo owner=root group=root mode=0644
     - yum: name='*' state=latest exclude='kernel*'
@@ -15,10 +17,17 @@
         - mosquitto
         - mosquitto-clients
     - service: name=mosquitto enabled=no state=stopped
+    - pip: name=pip extra_args='--upgrade'
     - pip: name=supervisor
+    - pip: name=paho-mqtt
     - copy: src=supervisor-init dest=/etc/init.d/supervisor mode=0755
     - copy: src=supervisor-sysconfig dest=/etc/sysconfig/supervisor mode=0644
     - copy: src=supervisord.conf dest=/etc/supervisord.conf mode=0644
     - file: path=/etc/supervisor.d/ state=directory mode=0755
+    - file: path=/var/log/supervisor state=directory mode=0755
+    - copy: src=ncpws.conf dest=/etc/supervisor.d/ncpws.conf mode=0644
+    - copy: src=../NCPWS_server_data_logger.py dest=/home/ec2-user/NCPWS_server_data_logger.py mode=0644
+    - copy: src=config.json dest=/home/ec2-user/config.json mode=0644
     - command: chkconfig --add supervisor
+    - service: name=supervisor enabled=yes state=stopped
     - service: name=supervisor enabled=yes state=started
