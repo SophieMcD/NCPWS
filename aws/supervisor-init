@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #
 # supervisord   This scripts turns supervisord on
 #
@@ -19,9 +19,6 @@
 # config: /etc/supervisord.conf
 # pidfile: /var/run/supervisord.pid
 #
-
-# Treat unset variables as error
-set -o nounset
 
 # source function library
 . /etc/rc.d/init.d/functions
