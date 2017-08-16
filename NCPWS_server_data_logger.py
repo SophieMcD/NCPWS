@@ -30,9 +30,7 @@ def on_connect(client, userdata, flags, rc):
 
        
 def on_message(client, userdata, msg):
-    print(msg.topic+ " incoming data " +str(msg.payload))
-    data = msg.payload
-    print ("data: "+ data)
+    print(msg.topic+ " incoming data: " +str(msg.payload))
     # write topics to file
     # take the last portion of the topic name (e.g. test3text, feb1, plant1a, instead of /users/woolfie/test3text)
     topic_name = msg.topic.split('/')[-1]

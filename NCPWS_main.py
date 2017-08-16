@@ -66,6 +66,13 @@ sIncomingSUB.bind((HOST,PORTsub))
 #send data to PUB
 socketPUB = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
+       
+def send_data_to_broker (data):
+    sensor_data = str(data)
+    mqttc = mqtt.Client(clientPub)
+    mqttc.username_pw_set("woolfie", pwPub)
+    mqttc.connect("mqtt.opensensors.io", 1883, 60)
+    mqttc.publish("/users/woolfie/" + topic_Pub, sensor_data, qos=1)
 
 # watering lock for user to deactivate their private plant from the system for n hours
 class WateringLock(object):
@@ -78,9 +85,11 @@ class WateringLock(object):
         if self.locked:
             self.turn_watering_lock_off()
             print("Turning Lock OFF")
+            send_data_to_broker("this plants water lock off")
         else:
             self.turn_watering_lock_on()
             print("Turning Lock ON")
+            send_data_to_broker("this plants water lock on")
 
     def turn_watering_lock_off(self):
         GPIO.output(ledWL, 0)
@@ -103,16 +112,7 @@ def on_publish(client, userdata, mid):
 
        
 def on_connect(client, userdata, rc):
-       print(str(datetime.datetime.now())+ " On connect")      
-
-       
-def send_data_to_broker (data):
-    sensor_data = str(data)
-    mqttc = mqtt.Client(clientPub)
-    mqttc.username_pw_set("woolfie", pwPub)
-    mqttc.connect("mqtt.opensensors.io", 1883, 60)
-    mqttc.publish("/users/woolfie/" + topic_Pub, sensor_data, qos=1)
-
+       print(str(datetime.datetime.now())+ " On connect")
     
 def pump_ON():
     GPIO.output(pumpPin, 1)
@@ -154,7 +154,6 @@ def cb_waterlock(channel):
         pass #print "debouncing, ignoring waterlock button press"
     else:
         wl.press_button() #this has the flag and will turn on/off as apropriate
-        send_data_to_broker("this plants water lock on")
     wl_last_pressed = now
         
 GPIO.add_event_detect(wlButtonPin, GPIO.RISING, callback=cb_waterlock)
