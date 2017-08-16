@@ -31,3 +31,8 @@
     - command: chkconfig --add supervisor
     - service: name=supervisor enabled=yes state=stopped
     - service: name=supervisor enabled=yes state=started
+    - authorized_key:
+        user: ec2-user
+        state: present
+        key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC8mUBqS/t4yc+iXFnQKreUlKNG/yXDMQbWDmS8Phq/BGUIEGF0/tdbPoV/wsaMqPg89iiHOoN2K/ZLki2cobiGqH+gWWx8Fy17IezZCe6Bq8qlrB/tdbRgNCwqhef0dmuiAbX78sJleHE9tn9/2nUz0XFbe/hhTends3+uheVqxtPnFbZQe9E4Ji6H6h/doiOXq+q/yXSDTxLZ+MfEmvMSiZTxHvlsW9CtdZYOyK4+EzFcExy5EW1drsciT5Imw2Dzm2A8ow0MzzJVIENa9Vx/zlERSINFiCzlBOXgEwdmsVWTeUAXfkbirLVwFJsnCY3mMTw2iyfGPAwxy4VBWTUx vakkermans@Brutus"
+

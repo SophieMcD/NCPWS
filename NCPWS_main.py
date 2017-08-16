@@ -216,7 +216,24 @@ signal.signal(signal.SIGINT, kill_handler)
 
 # Main loop.
 
+WAIT_TIME = 10
+
+heartbeat_timer = None
+
+def reset_heartbeat_timer():
+    if heartbeat_timer is not None:
+        heartbeat_timer.cancel()
+        heartbeat_timer = None
+    heartbeat_timer = threading.Timer(2 * WAIT_TIME, cb_lost_connection)
+    heartbeat_timer.start()
+
+def cb_lost_connection():
+    print "did not receive heartbeat, turning off pump"
+    pump_OFF()
+
 def handle_incoming_data(incomingData):
+    global heartbeat_timer
+
     if incomingData == str("pump on"):
         print("paired plant's pump is on")
         if wl.locked():
@@ -225,18 +242,16 @@ def handle_incoming_data(incomingData):
         else:
             print("activating local pump")
             pump_ON()
-                    
     elif incomingData == str("pump off"):
         print("paired plant pump off, turning local pump off")
         pump_OFF()
-
     elif incomingData == str("no incoming data received"):
         print("paired plant's lost connection")
-        
+    elif incomingData == "heartbeat":
+        reset_heartbeat_timer()
     else:
-        GPIO.output(ledPump,0)
+        GPIO.output(ledPump, 0)
 
-        
 def cleanup_and_quit(exit_code=0):
     GPIO.cleanup()
     sys.exit(exit_code)
@@ -249,16 +264,15 @@ while not exit_program:
     if shuttingDown:
         while True:
             time.sleep(1)
+
+    send_data_to_broker("heartbeat")
         
     try:
-        ready = select.select([sIncomingSUB], [], [], 10)
+        ready = select.select([sIncomingSUB], [], [], WAIT_TIME)
         if ready[0]:
             incomingData = sIncomingSUB.recv(32)
             print ("incoming: " + incomingData) #already averaged on other end
             handle_incoming_data(incomingData)
-        else:
-            print("no incoming data")
-            send_data_to_broker("no incoming data received")
         sys.stdout.flush()
     except:
         print("Something wen't wrong while receiving data")
