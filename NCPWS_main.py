@@ -151,7 +151,7 @@ def cb_waterlock(channel):
     global wl_last_pressed
     now = time.time()
     if now - wl_last_pressed < 1.5:
-        print "debouncing, ignoring waterlock button press"
+        pass #print "debouncing, ignoring waterlock button press"
     else:
         wl.press_button() #this has the flag and will turn on/off as apropriate
         send_data_to_broker("this plants water lock on")
@@ -161,16 +161,39 @@ GPIO.add_event_detect(wlButtonPin, GPIO.RISING, callback=cb_waterlock)
 
 # Pump interrupt
 
-def cb_pump_on():
-     print "Local BUTTON PRESSED"
-     pump_ON()
-     print("local pump ON, activated by local user")
-     send_data_to_broker("pump on, activated by local user")
+pump_last_on = 0.0
 
-def cb_pump_off():
-    print "no pumps on"
+def cb_pump_on():
+    cb_pump_off_cancel_timer()
+    global pump_last_on
+    now = time.time()
+    if now - pump_last_on < 1.5:
+        pass # debouncing
+    else:
+        print "Local BUTTON PRESSED"
+        pump_ON()
+        print("local pump ON, activated by local user")
+        send_data_to_broker("pump on, activated by local user")
+    pump_last_on = now
+
+pump_off_timer = None
+
+def cb_pump_off_timer():
+    print "turning pumps off"
     pump_OFF()
     send_data_to_broker("pump off")
+
+def cb_pump_off_cancel_timer():
+    global pump_off_timer
+    if pump_off_timer is not None:
+        pump_off_timer.cancel()
+        pump_off_timer = None
+
+def cb_pump_off():
+    global pump_off_timer
+    cb_pump_off_cancel_timer()
+    pump_off_timer = threading.Timer(1.5, cb_pump_off_timer)
+    pump_off_timer.start()
 
 def cb_pump(channel):
     if GPIO.input(pumpButton):
