@@ -233,7 +233,7 @@ def cb_lost_connection():
     pump_OFF()
 
 def handle_incoming_data(incomingData):
-    if incomingData == str("pump on"):
+    if incomingData == str("pump on, activated by local user"):
         print("paired plant's pump is on")
         if wl.locked():
             print ("watering lock on, do not activate this pump")
