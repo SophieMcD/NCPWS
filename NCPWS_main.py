@@ -235,7 +235,7 @@ def cb_lost_connection():
 def handle_incoming_data(incomingData):
     if incomingData == str("pump on, activated by local user"):
         print("paired plant's pump is on")
-        if wl.locked():
+        if wl.locked:
             print ("watering lock on, do not activate this pump")
             send_data_to_broker("local pump deactivated by user. Wait 4 hours from lock time stamp")
         else:
