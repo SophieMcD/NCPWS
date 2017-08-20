@@ -15,12 +15,12 @@ time.sleep(5)
 #  set the pins numbering mode 
 GPIO.setmode(GPIO.BOARD)
 
-with open("/home/pi/NCPWSstartup/json_config_files/configFile_1b.json") as f:
-    config = json.load(f)
-
-#filePath = sys.argv[1]
-#with open(filePath) as f:
+#with open("/home/pi/NCPWSstartup/json_config_files/configFile_1b.json") as f:
 #    config = json.load(f)
+
+filePath = sys.argv[1]
+with open(filePath) as f:
+    config = json.load(f)
 
 #jason vars
 plantID = config["plantIDj"]
@@ -166,7 +166,7 @@ def cb_pump_on():
     cb_pump_off_cancel_timer()
     global pump_last_on
     now = time.time()
-    if now - pump_last_on < 1.5:
+    if now - pump_last_on < 0.5:
         pass # debouncing
     else:
         print "Local BUTTON PRESSED"
@@ -191,7 +191,7 @@ def cb_pump_off_cancel_timer():
 def cb_pump_off():
     global pump_off_timer
     cb_pump_off_cancel_timer()
-    pump_off_timer = threading.Timer(1.5, cb_pump_off_timer)
+    pump_off_timer = threading.Timer(0.5, cb_pump_off_timer) #debounce, also time before pump turns off
     pump_off_timer.start()
 
 def cb_pump(channel):
@@ -221,6 +221,7 @@ WAIT_TIME = 10
 heartbeat_timer = None
 
 def reset_heartbeat_timer():
+    global heartbeat_timer
     if heartbeat_timer is not None:
         heartbeat_timer.cancel()
         heartbeat_timer = None
@@ -232,8 +233,6 @@ def cb_lost_connection():
     pump_OFF()
 
 def handle_incoming_data(incomingData):
-    global heartbeat_timer
-
     if incomingData == str("pump on"):
         print("paired plant's pump is on")
         if wl.locked():
@@ -274,7 +273,8 @@ while not exit_program:
             print ("incoming: " + incomingData) #already averaged on other end
             handle_incoming_data(incomingData)
         sys.stdout.flush()
-    except:
+    except Exception as e:
+        print str(e)
         print("Something wen't wrong while receiving data")
         cleanup_and_quit(1)
          
