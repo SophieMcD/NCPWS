@@ -15,12 +15,12 @@ time.sleep(5)
 #  set the pins numbering mode 
 GPIO.setmode(GPIO.BOARD)
 
-with open("/home/pi/NCPWSstartup/json_config_files/configFile_1b.json") as f:
-    config = json.load(f)
-
-#filePath = sys.argv[1]
-#with open(filePath) as f:
+#with open("/home/pi/NCPWSstartup/json_config_files/configFile_1b.json") as f:
 #    config = json.load(f)
+
+filePath = sys.argv[1]
+with open(filePath) as f:
+    config = json.load(f)
 
 #jason vars
 plantID = config["plantIDj"]
@@ -166,7 +166,7 @@ def cb_pump_on():
     cb_pump_off_cancel_timer()
     global pump_last_on
     now = time.time()
-    if now - pump_last_on < 1.5:
+    if now - pump_last_on < 0.5:
         pass # debouncing
     else:
         print "Local BUTTON PRESSED"
@@ -191,7 +191,7 @@ def cb_pump_off_cancel_timer():
 def cb_pump_off():
     global pump_off_timer
     cb_pump_off_cancel_timer()
-    pump_off_timer = threading.Timer(1.5, cb_pump_off_timer)
+    pump_off_timer = threading.Timer(0.5, cb_pump_off_timer) #off debounce - also delays motor off 
     pump_off_timer.start()
 
 def cb_pump(channel):
