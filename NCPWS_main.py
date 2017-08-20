@@ -261,8 +261,8 @@ def start_heartbeat():
     def cb():
         send_data_to_broker("heartbeat")
 	start_heartbeat() 
-    timer = threading.Timer(WAIT_TIME, start_heartbeat()
-    timer.start()
+    t = threading.Timer(WAIT_TIME, cb)
+    t.start()
 
 start_heartbeat()
  
