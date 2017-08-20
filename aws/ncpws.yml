@@ -34,5 +34,9 @@
     - authorized_key:
         user: ec2-user
         state: present
-        key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC8mUBqS/t4yc+iXFnQKreUlKNG/yXDMQbWDmS8Phq/BGUIEGF0/tdbPoV/wsaMqPg89iiHOoN2K/ZLki2cobiGqH+gWWx8Fy17IezZCe6Bq8qlrB/tdbRgNCwqhef0dmuiAbX78sJleHE9tn9/2nUz0XFbe/hhTends3+uheVqxtPnFbZQe9E4Ji6H6h/doiOXq+q/yXSDTxLZ+MfEmvMSiZTxHvlsW9CtdZYOyK4+EzFcExy5EW1drsciT5Imw2Dzm2A8ow0MzzJVIENa9Vx/zlERSINFiCzlBOXgEwdmsVWTeUAXfkbirLVwFJsnCY3mMTw2iyfGPAwxy4VBWTUx vakkermans@Brutus"
+        key: "{{ item }}"
+      with_items:
+        - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC8mUBqS/t4yc+iXFnQKreUlKNG/yXDMQbWDmS8Phq/BGUIEGF0/tdbPoV/wsaMqPg89iiHOoN2K/ZLki2cobiGqH+gWWx8Fy17IezZCe6Bq8qlrB/tdbRgNCwqhef0dmuiAbX78sJleHE9tn9/2nUz0XFbe/hhTends3+uheVqxtPnFbZQe9E4Ji6H6h/doiOXq+q/yXSDTxLZ+MfEmvMSiZTxHvlsW9CtdZYOyK4+EzFcExy5EW1drsciT5Imw2Dzm2A8ow0MzzJVIENa9Vx/zlERSINFiCzlBOXgEwdmsVWTeUAXfkbirLVwFJsnCY3mMTw2iyfGPAwxy4VBWTUx vakkermans@Brutus"
+        - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCeJqFqZu/Wzo34KhmOKpusNgFpMf4vo/GHne6LsGw9APrK/IMNrvYbbXQsCDAx0OYE0urObcUDLdxETQseWSt5M5yX5s32uNjcma6qFLZcM4/zKYldfweedPAW/dKSSF3bk8b8oba09kKT5oB+SB4hvoeC9UgsyEoGzXJN5M7fP+QtRU/hkTBY+FnjQ/6AklWnmuWS2jvZOnH4RBY9eCtZLzqdpPlOU4/rjNPdM9Ilr4SuViCkCX0lIZBsaK9BP3dWKywwhkgvhOqPJ59fPn3zdct37j7jZBWivRhGESXWlhmQF5qH9IgaxAktXLE9tR4X46xaVbc1qqRXt/CMfi4F user@users-MBP.lan"
+      tags: ssh
 
