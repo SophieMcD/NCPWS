@@ -256,7 +256,16 @@ def cleanup_and_quit(exit_code=0):
     sys.exit(exit_code)
         
 send_data_to_broker("reactivated system")
-    
+
+def start_heartbeat():
+    def cb():
+        send_data_to_broker("heartbeat")
+	start_heartbeat() 
+    timer = threading.Timer(WAIT_TIME, start_heartbeat()
+    timer.start()
+
+start_heartbeat()
+ 
 while not exit_program:
 
     # don't allow any other buttons to be pressed when we're shutting down
@@ -264,18 +273,15 @@ while not exit_program:
         while True:
             time.sleep(1)
 
-    send_data_to_broker("heartbeat")
-        
     try:
-        ready = select.select([sIncomingSUB], [], [], WAIT_TIME)
+        ready = select.select([sIncomingSUB], [], [], WAIT_TIME+1)
         if ready[0]:
             incomingData = sIncomingSUB.recv(32)
             print ("incoming: " + incomingData) #already averaged on other end
             handle_incoming_data(incomingData)
         sys.stdout.flush()
     except Exception as e:
-        print str(e)
-        print("Something wen't wrong while receiving data")
+        print("Something wen't wrong while receiving data", str(e))
         cleanup_and_quit(1)
          
 
