@@ -259,8 +259,10 @@ send_data_to_broker("reactivated system")
 
 def start_heartbeat():
     def cb():
-        send_data_to_broker("heartbeat")
-	start_heartbeat() 
+        try:
+            send_data_to_broker("heartbeat")
+        finally:
+	    start_heartbeat() 
     t = threading.Timer(WAIT_TIME, cb)
     t.start()
 
