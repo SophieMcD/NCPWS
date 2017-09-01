@@ -61,13 +61,12 @@ GPIO.output(ledWL, False)
 
 #SUB incoming data
 HOST = "localhost"
-sIncomingSUB = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-sIncomingSUB.bind((HOST,PORTsub))
-#send data to PUB
-socketPUB = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sIncomingSUB = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sIncomingSUB.bind((HOST, PORTsub))
 
        
 def send_data_to_broker (data):
+    print(data)
     sensor_data = str(data)
     mqttc = mqtt.Client(clientPub)
     mqttc.username_pw_set("woolfie", pwPub)
@@ -84,11 +83,9 @@ class WateringLock(object):
     def press_button(self):
         if self.locked:
             self.turn_watering_lock_off()
-            print("Turning Lock OFF")
             send_data_to_broker("this plants water lock off")
         else:
             self.turn_watering_lock_on()
-            print("Turning Lock ON")
             send_data_to_broker("this plants water lock on")
 
     def turn_watering_lock_off(self):
@@ -108,7 +105,7 @@ class WateringLock(object):
 
 
 def on_publish(client, userdata, mid):
-       print(str(datetime.datetime.now())+ " On publish: "+str(mid))
+       print(str(datetime.datetime.now())+ " On publish: " + str(mid))
 
        
 def on_connect(client, userdata, rc):
@@ -131,7 +128,7 @@ wl = WateringLock()
 shuttingDown = False
 
 def cb_shutdown(channel):
-    print "shutting down"
+    send_data_to_broker("shutting down")
     shuttingDown = True
     os.system("sudo shutdown")
     lightsOn = False
@@ -169,16 +166,13 @@ def cb_pump_on():
     if now - pump_last_on < 0.5:
         pass # debouncing
     else:
-        print "Local BUTTON PRESSED"
         pump_ON()
-        print("local pump ON, activated by local user")
-        send_data_to_broker("pump on, activated by local user")
+        send_data_to_broker("pump on - activated by local user")
     pump_last_on = now
 
 pump_off_timer = None
 
 def cb_pump_off_timer():
-    print "turning pumps off"
     pump_OFF()
     send_data_to_broker("pump off")
 
@@ -207,7 +201,6 @@ GPIO.add_event_detect(pumpButton, GPIO.BOTH, callback=cb_pump)
 exit_program = False
 
 def kill_handler(signum, frame):
-    print 'Signal handler called with signal', signum
     global exit_program
     exit_program = True
     
@@ -229,27 +222,23 @@ def reset_heartbeat_timer():
     heartbeat_timer.start()
 
 def cb_lost_connection():
-    print "did not receive heartbeat, turning off pump"
+    send_data_to_broker("did not receive heartbeat - turning off pump")
     pump_OFF()
 
 def handle_incoming_data(incomingData):
-    if incomingData == str("pump on, activated by local user"):
-        print("paired plant's pump is on")
+    if incomingData == str("pump on - activated by local user"):
         if wl.locked:
-            print ("watering lock on, do not activate this pump")
-            send_data_to_broker("local pump deactivated by user. Wait 4 hours from lock time stamp")
+            send_data_to_broker("remote pump on - local pump locked")
         else:
-            print("activating local pump")
+            send_data_to_broker("remote pump on - turning local pump on")
             pump_ON()
     elif incomingData == str("pump off"):
-        print("paired plant pump off, turning local pump off")
+        send_data_to_broker("remote pump off - turning local pump off")
         pump_OFF()
-    elif incomingData == str("no incoming data received"):
-        print("paired plant's lost connection")
     elif incomingData == "heartbeat":
         reset_heartbeat_timer()
     else:
-        GPIO.output(ledPump, 0)
+        pass
 
 def cleanup_and_quit(exit_code=0):
     GPIO.cleanup()
@@ -278,8 +267,8 @@ while not exit_program:
     try:
         ready = select.select([sIncomingSUB], [], [], WAIT_TIME+1)
         if ready[0]:
-            incomingData = sIncomingSUB.recv(32)
-            print ("incoming: " + incomingData) #already averaged on other end
+            incomingData = sIncomingSUB.recv(1024)
+            print("incoming: " + incomingData)
             handle_incoming_data(incomingData)
         sys.stdout.flush()
     except Exception as e:

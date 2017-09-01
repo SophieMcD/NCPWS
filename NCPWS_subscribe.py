@@ -64,5 +64,3 @@ mqttc.connect("mqtt.opensensors.io", 1883, 60)
 print(data)
 mqttc.loop_forever()
 
-
-    
